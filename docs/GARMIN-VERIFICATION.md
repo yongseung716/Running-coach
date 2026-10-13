@@ -28,4 +28,13 @@
 
 [Run 38368906738](https://github.com/yongseung716/Running-coach/actions/runs/38368906738)는 두 job 모두 성공했습니다. 검증한 코드 commit은 `d3c4d7cad5fe1901f1efc8637d0f32f487d5eb93`입니다. 업로드 표시/시간 결측 그래프 보완의 `timing_complete` 타입 누락을 원격 검사에서 발견해 수정한 뒤 전체 검사에 통과했습니다. 문서 후속 commit은 코드 변경 없이 이 결과를 기록합니다.
 
-사용자가 DB 추가 설정을 아직 실행하지 않았다고 알려 운영 main과 기존 앱을 유지합니다. 해당 migration은 검증된 추가 설정이며 성공 확인 후 main 반영·실배포 검증을 진행합니다.
+사용자가 추가 DB 설정의 `Success. No rows returned` 화면을 전달하고 요청한 migration의 실행 결과라고 명시적으로 확인했습니다. 검증된 기능 브랜치를 main에 병합하고 푸시했습니다.
+
+
+## 운영 새 버전 확인 — 2026-10-13
+
+배포 코드 `704ccae0b74ddedbd90afc694d5a03c26a43fb58`의 [main CI 38370443100](https://github.com/yongseung716/Running-coach/actions/runs/38370443100)는 기존 29개 회귀 및 전체 64개 Python 테스트, 39개 RLS 검증, 모바일/데스크톱 브라우저 6개 시나리오, 타입 검사, production 빌드와 프로세스 검사 모두 성공했습니다. Vercel의 해당 커밋 배포 상태도 success입니다.
+
+공개 운영 smoke 검사 17개가 통과했습니다. 앱 200, 직접 API와 앱 proxy의 engine_version 1.1.0 및 production DB SELECT 1, 새 OpenAPI 경로와 프런트엔드 배포 코드, 로그인 전 개인 기록/프로필/훈련 catalog/코칭 접근 401, 잘못된 Origin 403, 허용 Origin의 빈 로그인 입력 422, PWA manifest/worker/icons 200을 확인했습니다. 계정을 생성하거나 메일을 보내지 않았습니다. 상세 응답은 `garmin-production-results.json`에 보존합니다.
+
+사용자의 인증 세션/운영 비밀키를 보유하지 않으므로 새 버전의 실제 FIT 파일 Storage 업로드와 인증 후 신규 DB 컬럼 접근은 직접 확인하지 못했습니다. 사용자가 앱에서 강력 새로고침 후 프로필 기록 저장, Garmin 원본 FIT 업로드, 분석/코칭 확인 및 훈련 편집 저장을 진행하면 운영 사용자 흐름을 추가 검증할 수 있습니다. 로컬·CI 테스트는 재현 가능한 합성 FIT를 사용합니다.

@@ -1,0 +1,86 @@
+{
+  "checked_at": "2026-10-13T08:40:59.133611+00:00",
+  "source_commit": "704ccae0b74ddedbd90afc694d5a03c26a43fb58",
+  "web": "https://running-coach-inky.vercel.app",
+  "api": "https://running-coach-ergr.onrender.com",
+  "checks": {
+    "app_home": {
+      "status": 200,
+      "passed": true
+    },
+    "api_health": {
+      "passed": true,
+      "mode": "production",
+      "engine_version": "1.1.0",
+      "health_status": "ok",
+      "status": 200
+    },
+    "web_api_health": {
+      "passed": true,
+      "mode": "production",
+      "engine_version": "1.1.0",
+      "health_status": "ok",
+      "status": 200
+    },
+    "openapi": {
+      "status": 200,
+      "passed": true
+    },
+    "private_runs": {
+      "status": 401,
+      "passed": true
+    },
+    "private_profile": {
+      "status": 401,
+      "passed": true
+    },
+    "private_catalog": {
+      "status": 401,
+      "passed": true
+    },
+    "private_feedback": {
+      "status": 401,
+      "passed": true
+    },
+    "manifest": {
+      "status": 200,
+      "passed": true
+    },
+    "pwa_worker": {
+      "status": 200,
+      "passed": true
+    },
+    "icon_192": {
+      "status": 200,
+      "passed": true
+    },
+    "icon_512": {
+      "status": 200,
+      "passed": true
+    },
+    "new_api_routes": {
+      "passed": true,
+      "missing": []
+    },
+    "allowed_origin_validation": {
+      "status": 422,
+      "passed": true
+    },
+    "foreign_origin_block": {
+      "status": 403,
+      "passed": true
+    },
+    "pwa_manifest": {
+      "passed": true
+    },
+    "new_frontend_asset": {
+      "status": 200,
+      "passed": true,
+      "asset": "/_next/static/chunks/app/page-6da76c32f0f6e222.js"
+    }
+  },
+  "all_passed": true,
+  "limitations": [
+    "No user session or credentials are available; authenticated production FIT upload and database-column access require user verification."
+  ]
+}

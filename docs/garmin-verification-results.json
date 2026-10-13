@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-10-13T08:31:02.631985+00:00",
-  "branch": "feature/garmin-coaching",
-  "tested_commit": "d3c4d7cad5fe1901f1efc8637d0f32f487d5eb93",
+  "checked_at": "2026-10-13T08:40:59.133611+00:00",
+  "branch": "main",
+  "tested_commit": "704ccae0b74ddedbd90afc694d5a03c26a43fb58",
   "github_actions": {
-    "id": 38368906738,
+    "id": 38370443100,
     "conclusion": "success",
-    "url": "https://github.com/yongseung716/Running-coach/actions/runs/38368906738"
+    "url": "https://github.com/yongseung716/Running-coach/actions/runs/38370443100"
   },
   "checks": {
     "existing_regression": 29,
@@ -17,15 +17,19 @@
     "supervisor_lifecycle": "passed"
   },
   "deployment": {
-    "status": "awaiting_supabase_migration",
+    "status": "deployed_public_smoke_passed",
     "migration": "202610130002_garmin_coaching.sql",
-    "main_unchanged": "1db67f7d0c7dd100af20dc8843e799bdd87d0afb",
-    "user_migration_reply": "아직 실행하지 않음"
+    "migration_confirmation": "User supplied Success screenshot and explicitly confirmed this is the requested additional database setup.",
+    "web": "https://running-coach-inky.vercel.app",
+    "api": "https://running-coach-ergr.onrender.com",
+    "engine_version": "1.1.0",
+    "source_commit": "704ccae0b74ddedbd90afc694d5a03c26a43fb58",
+    "production_report": "docs/garmin-production-results.json"
   },
   "limitations": [
     "Garmin private metrics absent from the file are unavailable or explicitly manually entered.",
     "Coaching is deterministic rules; no external LLM key is needed.",
-    "Production new-version and multi-account Supabase smoke checks pending.",
+    "Authenticated production FIT upload and multi-account Supabase smoke checks pending; public production verification passed.",
     "14-person email SMTP setup paused by app modification request."
   ]
 }
