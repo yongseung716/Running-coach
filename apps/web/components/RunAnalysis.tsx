@@ -23,7 +23,8 @@ const graphFields = [
 ];
 
 function MetricCharts({ analysis }: { analysis: Analysis }) {
-  const [axis, setAxis] = useState('time');
+  const [axis, setAxis] = useState(analysis.timing_complete ? 'time' : 'distance');
+  useEffect(() => { if (!analysis.timing_complete) setAxis('distance'); }, [analysis.timing_complete]);
   const [display, setDisplay] = useState('pace');
   const [index, setIndex] = useState<number | null>(null);
   const field = axis === 'time' ? 'elapsed_seconds' : 'distance_km';
@@ -32,7 +33,7 @@ function MetricCharts({ analysis }: { analysis: Analysis }) {
   const x = (p: Analysis['series'][number]) => Number(p[field] || 0) / extent * 600;
   const fields = [[display === 'pace' ? 'pace_sec_km' : 'speed_kmh', display === 'pace' ? '페이스' : '속도', display === 'pace' ? '/km' : 'km/h', '#4b99d2'], ...graphFields];
   const format = (key: string, value: number | null) => key === 'pace_sec_km' ? pace(value) : number(value, 2);
-  return <section className="signal-charts"><div className="chart-controls"><h3>시간·거리별 측정 지표</h3><label>가로축<select aria-label="그래프 가로축" value={axis} onChange={e => { setAxis(e.target.value); setIndex(null); }}><option value="time">시간</option><option value="distance">거리</option></select></label><label>페이스 / 속도<select aria-label="페이스 또는 속도" value={display} onChange={e => setDisplay(e.target.value)}><option value="pace">페이스</option><option value="speed">속도</option></select></label></div>
+  return <section className="signal-charts"><div className="chart-controls"><h3>시간·거리별 측정 지표</h3><label>가로축<select aria-label="그래프 가로축" value={axis} onChange={e => { setAxis(e.target.value); setIndex(null); }}><option value="time" disabled={!analysis.timing_complete}>시간</option><option value="distance">거리</option></select></label><label>페이스 / 속도<select aria-label="페이스 또는 속도" value={display} onChange={e => setDisplay(e.target.value)}><option value="pace">페이스</option><option value="speed">속도</option></select></label></div>
     <p className="fine">그래프 위를 움직이거나 터치하면 같은 시점의 지표를 함께 확인합니다. 결측·분리 구간은 연결하지 않습니다.</p>
     {fields.map(([key, title, unit, color]) => {
       const valid = analysis.series.filter(p => typeof p[key] === 'number');
