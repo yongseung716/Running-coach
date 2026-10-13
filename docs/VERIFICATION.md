@@ -1,6 +1,6 @@
 # 검증 기록
 
-2026-10-13 UTC. 로컬 실행 결과와 GitHub/외부 배포 상태를 구분합니다. 기계 기록은 [verification-results.json](verification-results.json)에 있습니다.
+2026-10-13 UTC. 로컬 및 GitHub Actions에서 검증을 완료했습니다. 실제 Supabase/Vercel 운영 배포와는 구분합니다. 기계 기록은 [verification-results.json](verification-results.json)에 있습니다.
 
 | 검사 | 실제 결과 |
 |---|---|
@@ -13,8 +13,8 @@
 | TypeScript | 통과 |
 | Next.js 최종 소스 빌드 | 통과 (15.5.27) |
 | 모바일·데스크톱 Playwright | **4개 통과** |
-| GitHub main 푸시 | **GitHub HTTP 403으로 차단** |
-| GitHub Actions 실행 | **미실행: 원격 푸시가 차단됨** |
+| GitHub main 푸시 | **성공** |
+| GitHub Actions 실행 | **두 job 모두 성공** |
 | 실제 Supabase Auth/Storage·Vercel 배포 | 미실행: 외부 프로젝트 설정 필요 |
 
 ## 실제 동작 확인
@@ -34,12 +34,14 @@ fixture는 합성 테스트 자료이며 기본 계정에 자동 삽입되지 �
 - 깨끗한 checkout에서도 route 타입을 생성하도록 typecheck에 `next typegen`을 추가했습니다.
 - 수정 후 모바일·데스크톱 4개 브라우저 테스트 및 최종 Next.js 빌드를 재실행하여 통과했습니다.
 
-## Git 보존과 원격 차단
+## Git 보존과 연결 복구
 
 로컬 저장소는 `main`, origin은 `https://github.com/yongseung716/Running-coach.git`입니다. 초기 commit `94c33c6`에 기존 전체 소스·테스트·CI와 package-lock.json을 보존했습니다. UI 수정과 최신 검증 문서는 후속 commit에 보존합니다. .venv, node_modules, 실제 .env 변형, data, 인증 서명 키, .pem/.key/.p12/.pfx는 제외합니다. 빈 값의 .env.example 템플릿은 실행 설정 안내용으로 유지합니다.
 
-정상 인증된 GitHub CLI 조회와 네트워크 설치는 성공했지만, `git push -u origin main`은 provider의 HTTP 403으로 거절되었습니다. 자동 승인 검토가 거절한 것이 아니라 GitHub가 쓰기를 차단한 결과입니다. 따라서 원격 commit·Actions run URL은 아직 존재하지 않습니다. 사용자가 공유한 GitHub 설정 화면에는 `No installed GitHub Apps`가 표시되어 연결용 App 설치가 필요함을 확인했습니다. GitHub 모바일 앱 설치와 별도로 Codex의 GitHub 연결에서 저장소를 선택·승인해야 합니다.
+초기에는 GitHub 계정의 push/admin 권한 조회는 성공했지만 연결용 App 설치가 0개여서 실제 push가 HTTP 403으로 거절됐습니다. 사용자가 `https://github.com/apps/chatgpt-codex-connector/installations/new`에서 저장소 소유 계정에 ChatGPT Codex Connector를 설치한 후 installation 및 대상 저장소 접근을 확인했고, 동일한 `git push -u origin main`이 성공했습니다. 원인은 계정 소유권 부족이 아니라 연결용 App 설치가 완료되지 않은 상태였습니다.
 
-## GitHub Actions 준비
+## GitHub Actions 실제 결과
 
-`.github/workflows/ci.yml`에 push/pull_request/workflow_dispatch 트리거를 구성했습니다. `regression` job은 기존 29개를 15/7/7로 분리해서 재실행합니다. `verify` job은 전체 Python 39개, npm ci, TypeScript, RLS, build, 모바일·데스크톱 browser test를 실행합니다. 이 workflow는 로컬 commit에 포함되었고 원격 업로드 후 실제 실행 결과를 확인해야 합니다. Git 전체 이력을 보존한 bundle의 사용법은 [GITHUB-PUBLISH.md](GITHUB-PUBLISH.md)에 있습니다.
+`.github/workflows/ci.yml`에 push/pull_request/workflow_dispatch 트리거를 구성했습니다. `regression` job은 기존 29개를 15/7/7로 분리해서 재실행합니다. `verify` job은 전체 Python 39개, npm ci, TypeScript, RLS, build, 모바일·데스크톱 browser test를 실행합니다. 이 workflow를 main에 푸시한 후 원격에서 두 job 모두 성공했습니다. Git 전체 이력을 보존한 bundle의 사용법은 [GITHUB-PUBLISH.md](GITHUB-PUBLISH.md)에 있습니다.
+
+실제 성공 실행: [https://github.com/yongseung716/Running-coach/actions/runs/38343946786](https://github.com/yongseung716/Running-coach/actions/runs/38343946786). 검증한 코드 commit: `84a2c6fc71169ead518b2c842036d4b4c7cc535e`. CI의 원본 요약은 [github-actions-results.json](github-actions-results.json)에 보존합니다. 회귀 job은 26초, 전체 verify job은 1분 56초에 성공했으며 실패 수정이 필요한 원격 CI 오류는 없었습니다. 이 결과를 기록하는 마지막 commit은 문서만 변경하며 이미 통과한 코드에는 변경이 없습니다.

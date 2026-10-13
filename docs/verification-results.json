@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-13T03:33:37.469638+00:00",
+  "checked_at": "2026-10-13T03:59:36.701108+00:00",
   "checks": [
     {
       "name": "GPX analysis",
@@ -50,13 +50,15 @@
     },
     {
       "name": "GitHub main push",
-      "status": "blocked",
-      "reason": "GitHub HTTP 403: Permission to yongseung716/Running-coach.git denied to yongseung716"
+      "status": "passed",
+      "commit": "84a2c6fc71169ead518b2c842036d4b4c7cc535e"
     },
     {
       "name": "GitHub Actions execution",
-      "status": "blocked",
-      "reason": "Workflow committed locally; remote push denied, no run created"
+      "status": "passed",
+      "run_id": 38343946786,
+      "url": "https://github.com/yongseung716/Running-coach/actions/runs/38343946786",
+      "commit": "84a2c6fc71169ead518b2c842036d4b4c7cc535e"
     },
     {
       "name": "Supabase/Vercel production deployment",
@@ -67,6 +69,6 @@
   "notes": [
     "Python tests required approved execution privileges because the default sandbox blocked TestClient event-loop wakeup.",
     "39 Python tests include all existing 29 regression tests.",
-    "GitHub Actions results are not claimed; these test results were observed locally."
+    "GitHub Actions independently passed regression and verify jobs for commit 84a2c6fc71169ead518b2c842036d4b4c7cc535e"
   ]
 }

@@ -1,0 +1,33 @@
+{
+  "repository": "yongseung716/Running-coach",
+  "branch": "main",
+  "head_sha": "84a2c6fc71169ead518b2c842036d4b4c7cc535e",
+  "run_id": 38343946786,
+  "event": "push",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/yongseung716/Running-coach/actions/runs/38343946786",
+  "completed_at": "2026-10-13T03:57:02Z",
+  "jobs": [
+    {
+      "id": 115120940972,
+      "name": "Existing 29 regression tests",
+      "conclusion": "success",
+      "test_counts": {
+        "GPX": 15,
+        "coaching": 7,
+        "security": 7
+      }
+    },
+    {
+      "id": 115120941103,
+      "name": "verify",
+      "conclusion": "success",
+      "python_tests": 39,
+      "rls_assertions": 24,
+      "browser_tests": 4,
+      "typescript": "passed",
+      "next_build": "passed"
+    }
+  ]
+}

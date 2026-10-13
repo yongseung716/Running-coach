@@ -25,3 +25,7 @@ Codex Cloud의 웹/데스크톱에서는 Work in → Cloud → Select environmen
 - https://docs.github.com/en/apps/using-github-apps/reviewing-and-modifying-installed-github-apps
 - https://help.openai.com/en/articles/11145903-connecting-github-to-chatgpt
 - https://developers.openai.com/codex/cloud/
+
+## 설치된 앱이 없는 화면의 경우
+
+`No installed GitHub Apps`라면 [ChatGPT Codex Connector 직접 설치](https://github.com/apps/chatgpt-codex-connector/installations/new)에서 저장소 소유 계정 → Only select repositories → Running-coach → Install/Install & Authorize를 진행합니다. 이 프로젝트는 이 설치 후 실제 main push와 GitHub Actions가 성공했습니다. 앞의 Configure 안내는 이미 설치된 앱이 있을 때 사용합니다.

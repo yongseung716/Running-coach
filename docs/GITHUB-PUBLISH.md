@@ -2,7 +2,7 @@
 
 대상: `https://github.com/yongseung716/Running-coach.git`, 브랜치: `main`.
 
-현재 origin 설정과 로컬 commit은 완료됐지만 연결된 인증으로 `git push`가 GitHub HTTP 403을 받았습니다. 원격 저장소에는 아직 소스와 workflow가 업로드되지 않았습니다. GitHub 연결용 App 설치·저장소 접근 및 쓰기 가능한 Codex 연결을 먼저 확인해야 합니다.
+origin 설정과 main commit·push가 완료됐습니다. 소스·테스트·workflow가 원격 저장소에 보존되어 있고 GitHub Actions 두 job이 성공했습니다. 초기 HTTP 403은 저장소 소유 계정에 ChatGPT Codex Connector를 설치하고 대상 저장소 접근을 허용한 뒤 해결됐습니다. 검증 실행 링크는 [VERIFICATION.md](VERIFICATION.md)에 있습니다.
 
 ## 기존 workspace에서 게시
 
