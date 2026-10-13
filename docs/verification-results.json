@@ -1,0 +1,74 @@
+{
+  "checked_at": "2026-10-13T02:33:20.304395+00:00",
+  "checks": [
+    {
+      "name": "GPX analysis",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "Rule coaching",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "JWT/password/storage security",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "API lifecycle",
+      "status": "blocked",
+      "missing": [
+        "sqlalchemy",
+        "email_validator"
+      ]
+    },
+    {
+      "name": "Python source syntax",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "Service worker syntax",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "PostgreSQL/RLS",
+      "status": "blocked",
+      "missing": [
+        "@electric-sql/pglite"
+      ]
+    },
+    {
+      "name": "TypeScript",
+      "status": "blocked",
+      "missing": [
+        "typescript",
+        "next",
+        "react"
+      ]
+    },
+    {
+      "name": "Next build",
+      "status": "blocked",
+      "missing": [
+        "next",
+        "react",
+        "@tailwindcss/postcss"
+      ]
+    },
+    {
+      "name": "Browser lifecycle",
+      "status": "blocked",
+      "missing": [
+        "sqlalchemy",
+        "email_validator",
+        "@playwright/test",
+        "next",
+        "react"
+      ]
+    }
+  ]
+}

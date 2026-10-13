@@ -1,0 +1,11 @@
+export type Profile = { id: string; display_name: string; goal_distance_km: number | null; goal_time_min: number | null; runs_per_week: number };
+export type Analysis = { engine_version: string; started_at: string | null; distance_km: number; pace_sec_km: number | null; elapsed_seconds: number | null; moving_seconds: number | null; avg_heart_rate: number | null; heart_rate_coverage: number; ascent_m: number | null; descent_m: number | null; warnings: string[]; splits: { index: number; distance_km: number; partial: boolean; pace_sec_km: number | null }[]; series: { distance_km: number; elevation_m: number | null; heart_rate_bpm: number | null }[] };
+export type Run = { id: string; created_at: string; status: "queued" | "processing" | "completed" | "failed"; error: string | null; analysis: Analysis | null };
+export type RunPage = { items: Run[]; next_cursor: string | null };
+export type Dashboard = { distance_28d_km: number; runs_28d: number; weekly: { week_start: string; distance_km: number }[]; note: string };
+export type Member = { crew_id: string; user_id: string; role: "owner" | "admin" | "member"; status: "pending" | "active" | "rejected"; share_summary: boolean };
+export type Crew = { id: string; name: string; owner_id: string; membership: Member };
+export type CrewDetail = { id: string; name: string; members: Member[] };
+export type CrewSummary = { consenting_members: number; suppressed: boolean; distance_km: number | null; run_count: number | null };
+export type TrainingDay = { day_index: number; date: string; title: string; type: "rest" | "easy" | "steady"; distance_km: number | null; duration_min: number | null; instruction: string };
+export type Plan = { id: string; week_start: string; prescription: { version: string; days: TrainingDay[]; explanation: string; limitations: string[]; basis: { valid_runs_28d: number; distance_28d_km: number; distance_7d_km: number; weekly_target_km: number | null; goal_pace_sec_km: number | null } }; completions: { day_index: number; run_id: string | null }[] };

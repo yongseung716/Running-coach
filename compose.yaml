@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      MODE: development
+      DATABASE_URL: sqlite:////data/coach.db
+      DATA_DIR: /data
+      ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    volumes: ["coach-data:/data"]
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["python", "-m", "coach.worker"]
+    environment:
+      MODE: development
+      DATABASE_URL: sqlite:////data/coach.db
+      DATA_DIR: /data
+    volumes: ["coach-data:/data"]
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  coach-data:

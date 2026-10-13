@@ -1,0 +1,13 @@
+{
+  "name": "running-coach",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/web",
+    "build": "npm run build --workspace apps/web",
+    "typecheck": "npm run typecheck --workspace apps/web",
+    "test:web": "npm run test --workspace apps/web",
+    "test:rls": "node scripts/test-rls.mjs"
+  },
+  "devDependencies": {"@electric-sql/pglite": "^0.3.14"}
+}

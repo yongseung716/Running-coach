@@ -1,0 +1,79 @@
+// PostgreSQL RLS execution without Docker. Real Supabase Storage/Auth need a separate smoke test.
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { PGlite } from "@electric-sql/pglite";
+
+const db = new PGlite();
+let assertions = 0;
+const eq = (a, b, message) => { assert.deepEqual(a, b, message); assertions++; };
+async function forbidden(sql) { await assert.rejects(() => db.exec(sql)); assertions++; }
+const a = "00000000-0000-4000-8000-000000000001";
+const b = "00000000-0000-4000-8000-000000000002";
+const c = "00000000-0000-4000-8000-000000000003";
+await db.exec(`
+CREATE ROLE anon;
+CREATE ROLE authenticated;
+CREATE ROLE service_role BYPASSRLS;
+CREATE SCHEMA auth;
+CREATE TABLE auth.users(id uuid PRIMARY KEY,raw_user_meta_data jsonb default '{}');
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
+GRANT USAGE ON SCHEMA auth,public TO authenticated,anon,service_role;
+GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;
+CREATE SCHEMA storage;
+CREATE TABLE storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+`);
+await db.exec(await readFile(new URL("../supabase/migrations/202610120001_initial.sql", import.meta.url), "utf8"));
+await db.exec(`INSERT INTO auth.users(id) VALUES ('${a}'),('${b}'),('${c}')`);
+async function actor(id) {
+  await db.exec(`RESET ROLE; SELECT set_config('request.jwt.claims','{"sub":"${id}","role":"authenticated"}',false); SET ROLE authenticated;`);
+}
+async function scalar(sql) { const result = await db.query(sql); return Object.values(result.rows[0])[0]; }
+
+await actor(a);
+eq(await scalar("select count(*)::int from public.profiles"),1,"profile is private");
+const crew = await scalar("select public.create_crew('Beta crew')");
+eq(await scalar(`select role from public.memberships where crew_id='${crew}' and user_id='${a}'`),"owner");
+await db.exec(`insert into public.invites(crew_id,code_hash,expires_at) values('${crew}','validhash',extract(epoch from now())+86400)`);
+await forbidden(`update public.memberships set share_summary=true where user_id='${b}'`);
+await actor(b);
+eq(await scalar("select count(*)::int from public.crews"),0,"outsider crew access denied");
+await forbidden(`select public.crew_summary('${crew}')`);
+await db.exec("select public.request_join('validhash')");
+await forbidden(`select public.set_consent('${crew}',true)`);
+await forbidden(`select public.manage_member('${crew}','${b}','active',null)`);
+await forbidden(`insert into public.memberships(crew_id,user_id,role,status) values('${crew}','${c}','admin','active')`);
+await actor(a);
+await db.exec(`select public.manage_member('${crew}','${b}','active',null)`);
+await db.exec(`delete from public.memberships where crew_id='${crew}' and user_id='${a}'`);
+await forbidden(`update public.crews set owner_id='${b}' where id='${crew}'`);
+eq(await scalar(`select count(*)::int from public.memberships where crew_id='${crew}' and user_id='${a}'`),1,"owner cannot leave");
+await actor(c);
+await db.exec("select public.request_join('validhash')");
+await actor(a);
+await db.exec(`select public.manage_member('${crew}','${c}','active',null)`);
+await db.exec("RESET ROLE");
+const run = "00000000-0000-4000-8000-000000000010";
+await db.exec(`insert into public.runs(id,user_id,file_key,sha256,created_at,status,analysis) values('${run}','${b}','${b}/${run}.gpx','hash',now()::text,'completed',jsonb_build_object('distance_km',5,'started_at',now()::text))`);
+await actor(a);
+eq(await scalar("select count(*)::int from public.runs"),0,"owner cannot read member details");
+await forbidden(`update public.runs set analysis='{}' where id='${run}'`);
+await actor(b);
+eq(await scalar("select count(*)::int from public.runs"),1,"run owner access");
+await forbidden(`insert into public.runs(id,user_id,file_key,sha256,created_at,status,analysis) values(gen_random_uuid(),'${b}','fake','fake',now()::text,'completed','{}')`);
+await db.exec(`select public.set_consent('${crew}',true)`);
+eq((await scalar(`select public.crew_summary('${crew}')`)).suppressed,true);
+await actor(c); await db.exec(`select public.set_consent('${crew}',true)`);
+await actor(a); await db.exec(`select public.set_consent('${crew}',true)`);
+const summary = await scalar(`select public.crew_summary('${crew}')`);
+eq(summary.distance_km,5); eq(summary.run_count,1); eq(summary.suppressed,false);
+eq(Object.keys(summary).sort(),["consenting_members","distance_km","run_count","suppressed"].sort(),"only approved summary fields");
+await actor(b); await db.exec(`select public.set_consent('${crew}',false)`);
+eq((await scalar(`select public.crew_summary('${crew}')`)).suppressed,true,"revocation is immediate");
+await forbidden(`select public.transfer_crew('${crew}','${b}')`);
+await actor(a); await db.exec(`select public.transfer_crew('${crew}','${b}')`);
+eq(await scalar(`select owner_id::text from public.crews where id='${crew}'`),b);
+await db.exec("RESET ROLE; SET ROLE anon;");
+await forbidden("select * from public.runs");
+await forbidden("select public.create_crew('unauthenticated')");
+await db.close();
+console.log(`PASS: ${assertions} PostgreSQL/RLS assertions (PGlite). Supabase hosted smoke tests are separate.`);
