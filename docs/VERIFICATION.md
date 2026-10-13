@@ -1,40 +1,45 @@
 # 검증 기록
 
-작성: 2026-10-13 UTC. 아래 결과는 이 실행 환경에서 실제 실행한 검사와, 작성했지만 실행하지 못한 검사를 구분합니다.
+2026-10-13 UTC. 로컬 실행 결과와 GitHub/외부 배포 상태를 구분합니다. 기계 기록은 [verification-results.json](verification-results.json)에 있습니다.
 
 | 검사 | 실제 결과 |
 |---|---|
-| GPX 엔진 unittest | 15개 통과 |
-| 규칙 코칭 unittest | 7개 통과 |
-| JWT·비밀번호·저장소 보안 unittest | 7개 통과 |
-| Python 전체 소스 compileall | 통과 |
-| service worker / RLS runner JS 구문 | node --check 통과 |
-| API 통합 테스트 10개 | 실행 미완료: sqlalchemy가 미설치되어 import 실패 |
-| PostgreSQL RLS (PGlite) | 실행 미완료: npm dependencies 미설치 |
-| TypeScript typecheck / Next build | 실행 미완료: npm dependencies 미설치 |
-| 모바일/데스크톱 Playwright | 실행 미완료: Next/Python 의존성 미설치 |
-| Docker build / 실제 Supabase / Vercel | 미실행: 플랫폼 설정과 권한 필요 |
+| 기존 GPX 분석 회귀 테스트 | 15개 통과 |
+| 기존 규칙 코칭 회귀 테스트 | 7개 통과 |
+| 기존 JWT·비밀번호·저장소 보안 회귀 테스트 | 7개 통과 |
+| API 통합 테스트 | 10개 통과 |
+| Python 전체 | **39개 통과 (기존 29개 포함)** |
+| PostgreSQL RLS (PGlite) | **24개 assertion 통과** |
+| TypeScript | 통과 |
+| Next.js 최종 소스 빌드 | 통과 (15.5.27) |
+| 모바일·데스크톱 Playwright | **4개 통과** |
+| GitHub main 푸시 | **GitHub HTTP 403으로 차단** |
+| GitHub Actions 실행 | **미실행: 원격 푸시가 차단됨** |
+| 실제 Supabase Auth/Storage·Vercel 배포 | 미실행: 외부 프로젝트 설정 필요 |
 
-기본 실행에서 패키지 설치가 `Operation not permitted`로 실패했습니다. 사용자의 네트워크 설치 승인 후에도 추가 권한·샌드박스 밖 실행 요청이 대기 후 중단되어 패키지가 설치되지 않았습니다. 프록시 연결을 짧은 timeout으로 진단한 결과도 연결 실패였습니다. 지원되는 managed Docker 소켓 또한 `connect: operation not permitted`여서 실행되지 않았습니다. daemon은 실행 중이며 task UID는 1000이라 daemon 재시작은 하지 않았습니다.
+## 실제 동작 확인
 
-GitHub Actions 원격 검증 대안을 준비했습니다. 사용자가 생성한 `yongseung716/Running-couch`는 metadata 조회에 성공했고 비어 있는 저장소임을 확인했습니다. 그러나 README 초기 업로드가 GitHub API **403 Resource not accessible by integration**으로 거절되어 GitHub 연결의 저장소 쓰기 접근 설정이 필요합니다. 초기 커밋·브랜치·PR·CI 실행은 아직 생성되지 않았습니다. 연결된 계정은 저장소 소유 계정과 일치하지만, 계정 소유권과 integration token 권한은 별개입니다. 저장소 목록은 여전히 비어 있어 설치의 Repository access 설정도 확인해야 합니다.
+브라우저 테스트는 테스트 계정을 가입하고 실제 GPX fixture를 업로드하여 worker의 분석 완료를 기다립니다. 계획 생성·완료 기록, 크루 생성·초대·공유 동의, 프로필 저장, ZIP 내보내기, 로그아웃·재로그인, 원본/분석 삭제를 모바일과 데스크톱에서 확인했습니다. 잘못된 GPX는 실제 API 검증 오류를 표시합니다. API 테스트는 계정 삭제·실제 파일 삭제, 교차 사용자 조회/원본/삭제 차단, owner/admin/member 권한, 동의 철회, lease 복구와 3회 재시도도 확인합니다.
 
-접근 설정이 완료되면 준비된 workflow를 별도 브랜치/초안 PR에 넣고 실제 CI 결과를 확인할 수 있습니다. 이 상태에서 전체 앱의 정상 동작이나 배포 성공을 확인했다고 주장하지 않습니다. Supabase/Auth/Storage/Vercel 계정이나 키는 구성되어 있지 않습니다.
+fixture는 합성 테스트 자료이며 기본 계정에 자동 삽입되지 않습니다. 고정된 과거 날짜라 최근 28일 대시보드/처방에서 제외되는 조건도 검증했습니다. PGlite는 실제 PostgreSQL migration/RLS 쿼리를 실행하지만 Supabase 플랫폼 Auth·Storage 실서비스 smoke test를 대신하지 않습니다.
 
-`python scripts/verify.py`의 실제 결과는 [verification-results.json](verification-results.json)에 있습니다. **29개 테스트 통과**, 의존성이 없는 나머지 검사는 `blocked`, 전체 검증 종료 코드는 **2**입니다(성공 코드 0이 아님).
+## 발견·수정 및 재검증
 
-## 실제로 발견·수정한 오류
+- 시간대 없는 datetime, 빈 `<time/>`, XML 주석/processing instruction 처리 오류를 수정하고 알고리즘 회귀 테스트를 통과했습니다. 범위 밖 고도는 결측과 경고로 처리합니다.
+- 훈련량 반올림이 5% 상한을 넘지 않도록 내림 계산과 마지막 일자 잔여량 배분을 검증했습니다.
+- 모바일 계획 완료 폼이 가로 폭을 넘어서 하단 메뉴 클릭을 방해하던 문제를 실제 Playwright trace에서 확인하고 flex 너비를 수정했습니다.
+- 비동기 공유 동의 checkbox가 응답 전 이전 값으로 되돌아가던 문제를 즉시 상태 반영 및 요청 실패 시 복원으로 수정했습니다.
+- 가입 후 로그아웃에서 가입 폼이 남는 상태 오류를 수정했습니다.
+- Next의 route announcer와 앱 오류 알림을 구분하도록 테스트 locator를 수정했습니다.
+- 깨끗한 checkout에서도 route 타입을 생성하도록 typecheck에 `next typegen`을 추가했습니다.
+- 수정 후 모바일·데스크톱 4개 브라우저 테스트 및 최종 Next.js 빌드를 재실행하여 통과했습니다.
 
-시간대 없는 datetime을 parsing할 때 naive 객체가 남아 timezone-aware 시각과 뺄셈하는 오류를 unittest가 검출했습니다. timezone 누락을 결측으로 처리하도록 수정하여 회귀 테스트를 통과했습니다. 주간 훈련량 반올림으로 5% 상한을 넘지 않도록 내림 계산·마지막 훈련일 잔여량 분배도 검증했습니다.
+## Git 보존과 원격 차단
 
-추가 점검에서 빈 `<time/>`의 None 처리, lxml 주석/processing instruction 처리도 보강하여 실제 unittest를 통과했습니다. 비현실적인 고도는 결측과 경고로 처리합니다. JWT의 변조 서명·unsigned token·만료·다른 issuer/audience·미래 발급·잘못된 subject, salt가 다른 비밀번호 hash, 저장소 경로 침범과 실제 원본 삭제도 검증했습니다. 분석 엔진 버전은 1.0.1입니다.
+로컬 저장소는 `main`, origin은 `https://github.com/yongseung716/Running-coach.git`입니다. 초기 commit `94c33c6`에 기존 전체 소스·테스트·CI와 package-lock.json을 보존했습니다. UI 수정과 최신 검증 문서는 후속 commit에 보존합니다. .venv, node_modules, 실제 .env 변형, data, 인증 서명 키, .pem/.key/.p12/.pfx는 제외합니다. 빈 값의 .env.example 템플릿은 실행 설정 안내용으로 유지합니다.
 
-## 설치 후 필수 검사
+정상 인증된 GitHub CLI 조회와 네트워크 설치는 성공했지만, `git push -u origin main`은 provider의 HTTP 403으로 거절되었습니다. 자동 승인 검토가 거절한 것이 아니라 GitHub가 쓰기를 차단한 결과입니다. 따라서 원격 commit·Actions run URL은 아직 존재하지 않습니다. 사용자가 공유한 GitHub 설정 화면에는 `No installed GitHub Apps`가 표시되어 연결용 App 설치가 필요함을 확인했습니다. GitHub 모바일 앱 설치와 별도로 Codex의 GitHub 연결에서 저장소를 선택·승인해야 합니다.
 
-README의 설치/전체 unittest/typecheck/RLS/build/Playwright 명령을 실행하고 이 표를 실제 결과로 갱신합니다. 특히 SQLAlchemy transaction/RLS role 강등, durable worker 3회 retry, Supabase Storage remove API, 이메일 확인/JWKS/refresh/최근 인증 제한, 계정 삭제와 실제 저장소 제거, Vercel 동일 출처 proxy cookie/10 MiB 업로드는 실제 플랫폼에서 확인해야 합니다.
+## GitHub Actions 준비
 
-브라우저 테스트는 합성 fixture를 명시적으로 업로드해 실제 분석 엔진/worker를 실행합니다. mock 수치를 데이터처럼 보여주지 않으며, 기본 UI 계정에는 분석 기록이 없습니다. fixture가 과거 날짜라 최근 대시보드/처방에 들어가지 않는 조건도 API 테스트에 포함했습니다.
-
-이 저장소는 베타용 구현본이며, 실행되지 않은 통합/보안 검증을 완료하기 전 실제 개인정보를 수집하는 운영 배포를 시작하지 마세요.
-
-공식 OpenAI 문서 확인 후 정정: 일반 ChatGPT GitHub 연결은 읽기 전용입니다. 저장소 접근 범위 추가만으로 코드 push 권한이 생기지는 않습니다. 코드 업로드에는 Codex 저장소/환경 연결이 필요하며, 현재 403의 해결 여부는 그 연결 상태를 다시 확인해야 합니다. 화면 안내는 [github-guide/README.md](github-guide/README.md)에 있습니다.
+`.github/workflows/ci.yml`에 push/pull_request/workflow_dispatch 트리거를 구성했습니다. `regression` job은 기존 29개를 15/7/7로 분리해서 재실행합니다. `verify` job은 전체 Python 39개, npm ci, TypeScript, RLS, build, 모바일·데스크톱 browser test를 실행합니다. 이 workflow는 로컬 commit에 포함되었고 원격 업로드 후 실제 실행 결과를 확인해야 합니다. Git 전체 이력을 보존한 bundle의 사용법은 [GITHUB-PUBLISH.md](GITHUB-PUBLISH.md)에 있습니다.

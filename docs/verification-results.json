@@ -1,74 +1,72 @@
 {
-  "checked_at": "2026-10-13T02:33:20.304395+00:00",
+  "checked_at": "2026-10-13T03:33:37.469638+00:00",
   "checks": [
     {
       "name": "GPX analysis",
       "status": "passed",
-      "exit_code": 0
+      "tests": 15,
+      "command": ".venv/bin/python -m unittest discover -s apps/api/tests -v"
     },
     {
       "name": "Rule coaching",
       "status": "passed",
-      "exit_code": 0
+      "tests": 7,
+      "command": ".venv/bin/python -m unittest discover -s apps/api/tests -v"
     },
     {
       "name": "JWT/password/storage security",
       "status": "passed",
-      "exit_code": 0
+      "tests": 7,
+      "command": ".venv/bin/python -m unittest discover -s apps/api/tests -v"
     },
     {
       "name": "API lifecycle",
-      "status": "blocked",
-      "missing": [
-        "sqlalchemy",
-        "email_validator"
-      ]
-    },
-    {
-      "name": "Python source syntax",
       "status": "passed",
-      "exit_code": 0
-    },
-    {
-      "name": "Service worker syntax",
-      "status": "passed",
-      "exit_code": 0
+      "tests": 10,
+      "command": ".venv/bin/python -m unittest discover -s apps/api/tests -v"
     },
     {
       "name": "PostgreSQL/RLS",
-      "status": "blocked",
-      "missing": [
-        "@electric-sql/pglite"
-      ]
+      "status": "passed",
+      "assertions": 24,
+      "command": "npm run test:rls"
     },
     {
       "name": "TypeScript",
-      "status": "blocked",
-      "missing": [
-        "typescript",
-        "next",
-        "react"
-      ]
+      "status": "passed",
+      "command": "npm run typecheck"
     },
     {
       "name": "Next build",
-      "status": "blocked",
-      "missing": [
-        "next",
-        "react",
-        "@tailwindcss/postcss"
-      ]
+      "status": "passed",
+      "next_version": "15.5.27",
+      "command": "npm run build"
     },
     {
       "name": "Browser lifecycle",
+      "status": "passed",
+      "tests": 4,
+      "command": "PATH=<venv>/bin:$PATH npm run test:web"
+    },
+    {
+      "name": "GitHub main push",
       "status": "blocked",
-      "missing": [
-        "sqlalchemy",
-        "email_validator",
-        "@playwright/test",
-        "next",
-        "react"
-      ]
+      "reason": "GitHub HTTP 403: Permission to yongseung716/Running-coach.git denied to yongseung716"
+    },
+    {
+      "name": "GitHub Actions execution",
+      "status": "blocked",
+      "reason": "Workflow committed locally; remote push denied, no run created"
+    },
+    {
+      "name": "Supabase/Vercel production deployment",
+      "status": "not_run",
+      "reason": "External project credentials/deployment not configured"
     }
+  ],
+  "notes": [
+    "Python tests required approved execution privileges because the default sandbox blocked TestClient event-loop wakeup.",
+    "39 Python tests include all existing 29 regression tests.",
+    "GitHub Actions results are not claimed; these test results were observed locally."
   ]
 }

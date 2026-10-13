@@ -61,5 +61,5 @@ test("invalid GPX shows real server validation error", async ({ page }) => {
   await page.getByRole("button", { name: "회원가입", exact: true }).click();
   await expect(page.getByRole("heading", { name: /검증 러너님/ })).toBeVisible();
   await page.getByLabel("GPX 업로드", { exact: true }).setInputFiles({ name: "bad.gpx", mimeType: "application/gpx+xml", buffer: Buffer.from("<gpx/>") });
-  await expect(page.getByRole("alert")).toContainText("연속된 트랙 포인트가 2개 이상 필요합니다.");
+  await expect(page.getByRole("alert").filter({ hasText: "연속된 트랙 포인트가 2개 이상 필요합니다." })).toBeVisible();
 });
