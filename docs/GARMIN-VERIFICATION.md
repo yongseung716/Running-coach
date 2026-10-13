@@ -23,3 +23,9 @@
 앱 https://running-coach-inky.vercel.app 및 API https://running-coach-ergr.onrender.com에서 운영 health/API proxy/PWA manifest 응답을 직접 확인했습니다. 사용자 로그인, 합성 GPX 업로드 분석 결과 2.224km·6분/km·140bpm 화면, 원본/ZIP/삭제 완료 보고, 주간 계획 및 크루 owner·active/초대 코드 화면도 확인했습니다. 새 FIT/코칭/편집 버전의 실제 Supabase Auth/Storage 검증을 대신하지 않습니다.
 
 14명 다른 이메일 가입용 SMTP 설정, 여러 계정으로 하는 실제 Supabase 권한 smoke test, 무료 서버 절전 이후 재접속과 분석 재개는 아직 남아 있습니다. 이메일 설정은 앱 수정 요청으로 잠시 보류됐습니다.
+
+## GitHub Actions 최종 결과
+
+[Run 38368906738](https://github.com/yongseung716/Running-coach/actions/runs/38368906738)는 두 job 모두 성공했습니다. 검증한 코드 commit은 `d3c4d7cad5fe1901f1efc8637d0f32f487d5eb93`입니다. 업로드 표시/시간 결측 그래프 보완의 `timing_complete` 타입 누락을 원격 검사에서 발견해 수정한 뒤 전체 검사에 통과했습니다. 문서 후속 commit은 코드 변경 없이 이 결과를 기록합니다.
+
+사용자가 DB 추가 설정을 아직 실행하지 않았다고 알려 운영 main과 기존 앱을 유지합니다. 해당 migration은 검증된 추가 설정이며 성공 확인 후 main 반영·실배포 검증을 진행합니다.

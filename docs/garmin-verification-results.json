@@ -1,0 +1,31 @@
+{
+  "checked_at": "2026-10-13T08:31:02.631985+00:00",
+  "branch": "feature/garmin-coaching",
+  "tested_commit": "d3c4d7cad5fe1901f1efc8637d0f32f487d5eb93",
+  "github_actions": {
+    "id": 38368906738,
+    "conclusion": "success",
+    "url": "https://github.com/yongseung716/Running-coach/actions/runs/38368906738"
+  },
+  "checks": {
+    "existing_regression": 29,
+    "python_total": 64,
+    "postgresql_rls_assertions": 39,
+    "browser_scenarios": 6,
+    "typecheck": "passed",
+    "build": "passed",
+    "supervisor_lifecycle": "passed"
+  },
+  "deployment": {
+    "status": "awaiting_supabase_migration",
+    "migration": "202610130002_garmin_coaching.sql",
+    "main_unchanged": "1db67f7d0c7dd100af20dc8843e799bdd87d0afb",
+    "user_migration_reply": "아직 실행하지 않음"
+  },
+  "limitations": [
+    "Garmin private metrics absent from the file are unavailable or explicitly manually entered.",
+    "Coaching is deterministic rules; no external LLM key is needed.",
+    "Production new-version and multi-account Supabase smoke checks pending.",
+    "14-person email SMTP setup paused by app modification request."
+  ]
+}
