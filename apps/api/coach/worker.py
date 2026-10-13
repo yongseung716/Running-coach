@@ -5,7 +5,8 @@ import time
 from sqlalchemy import or_, select, update
 
 from . import storage
-from .analysis import GPXError, analyze
+from .analysis import GPXError
+from .activity import analyze_activity
 from .db import Run, initialize, session
 
 log = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ def process_one():
         if not result.rowcount:
             return True
     try:
-        analysis = analyze(storage.get(key))
+        analysis = analyze_activity(storage.get(key), key.rsplit('.', 1)[-1])
         values = {"status": "completed", "analysis": analysis, "error": None, "lease_until": None}
     except GPXError as exc:
         values = {"status": "failed", "error": str(exc), "lease_until": None}

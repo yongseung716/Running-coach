@@ -2,7 +2,7 @@
 name = "running-coach-api"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["fastapi>=0.121,<1", "uvicorn>=0.34,<1", "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "pyjwt[crypto]>=2.10,<3", "httpx>=0.28,<1", "python-multipart>=0.0.20,<1", "lxml>=5.3,<7", "pydantic-settings>=2.8,<3", "email-validator>=2.2,<3"]
+dependencies = ["fastapi>=0.121,<1", "uvicorn>=0.34,<1", "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "pyjwt[crypto]>=2.10,<3", "httpx>=0.28,<1", "python-multipart>=0.0.20,<1", "lxml>=5.3,<7", "pydantic-settings>=2.8,<3", "email-validator>=2.2,<3", "fitdecode>=0.11,<1"]
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "ruff>=0.11,<1"]

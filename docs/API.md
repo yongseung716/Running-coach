@@ -28,3 +28,5 @@ OpenAPI: API `/docs`, 기계 명세 `/openapi.json`. Frontend는 `/api` prefix�
 | GET | /health | public readiness(설정된 모드/엔진 버전) |
 
 내보내기와 목록은 private no-store 응답. ZIP 원본 이름은 UUID로 고정하고 사용자 파일명을 경로에 쓰지 않는다. 파일 읽기는 DB 소유권 검사 후 서버 Storage에서 수행한다. 상태는 UI에서 polling하여 보여주며 worker 실행이 필수다.
+
+상세 지표/코칭 버전에서 추가한 개인 endpoint, FIT·ZIP 업로드, 훈련 편집 사양은 [GARMIN-COACHING.md](GARMIN-COACHING.md)를 참조합니다. 검증 범위는 [GARMIN-VERIFICATION.md](GARMIN-VERIFICATION.md)에 기록합니다.

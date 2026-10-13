@@ -6,18 +6,23 @@ import time
 import zipfile
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from copy import deepcopy
+from typing import Literal
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import auth, storage
 from .analysis import VERSION, GPXError, parse_gpx
+from .activity import prepare_upload, private_route
+from .feedback import feedback
+from .training import catalog, build_day, plan_warnings
 from .coaching import prescribe
 from .config import settings
 from .db import Completion, Crew, Invite, Member, Plan, Profile, Run, User, dump, initialize, session, uid
@@ -29,7 +34,7 @@ async def lifespan(app):
     yield
 
 
-app = FastAPI(title="Running Coach API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Running Coach API", version="1.1.0", lifespan=lifespan)
 _limits = defaultdict(deque)
 
 
@@ -119,12 +124,13 @@ def membership(db, crew_id, user_id, roles=None):
 
 def rpc(db, name, **kwargs):
     # Function name/argument names are hard-coded by callers; values always bound.
-    args = ", ".join(f"CAST(:{key} AS uuid)" if key in {"p_crew", "p_user"} else f":{key}" for key in kwargs)
+    args = ", ".join(f"CAST(:{key} AS uuid)" if key in {"p_crew", "p_user", "p_run"} else f":{key}" for key in kwargs)
     return db.scalar(text(f"SELECT public.{name}({args})"), kwargs)
 
 
 def public_run(run):
-    return {k: v for k, v in dump(run).items() if k not in {"file_key", "sha256", "lease_until"}}
+    return {**{k: v for k, v in dump(run).items() if k not in {"file_key", "sha256", "lease_until"}},
+            "file_format": run.file_key.rsplit('.', 1)[-1]}
 
 
 class Input(BaseModel):
@@ -171,6 +177,75 @@ class CompleteInput(Input):
 
 class DeleteAccount(Input):
     confirm: str = Field(pattern="^DELETE$")
+
+
+class AthleteSettings(Input):
+    hr_max: int | None = Field(default=None, ge=100, le=240)
+    lthr: int | None = Field(default=None, ge=90, le=220)
+    benchmark_5k_min: float | None = Field(default=None, gt=10, le=150, allow_inf_nan=False)
+    benchmark_10k_min: float | None = Field(default=None, gt=20, le=300, allow_inf_nan=False)
+    benchmark_date: date | None = None
+    benchmark_5k_date: date | None = None
+    benchmark_10k_date: date | None = None
+
+    @model_validator(mode='after')
+    def consistent(self):
+        if self.hr_max and self.lthr and self.lthr >= self.hr_max:
+            raise ValueError('역치심박은 최대심박보다 낮아야 합니다.')
+        today = datetime.now(timezone.utc).date()
+        for distance in (5, 10):
+            stamp = getattr(self, f'benchmark_{distance}k_date') or self.benchmark_date
+            if getattr(self, f'benchmark_{distance}k_min') and stamp is None:
+                raise ValueError('실제 기록의 날짜를 함께 입력하세요.')
+            if stamp and stamp > today:
+                raise ValueError('미래의 경기 기록을 근거로 사용할 수 없습니다.')
+        return self
+
+
+class GarminExtras(Input):
+    primary_benefit: str | None = Field(default=None, max_length=80)
+    self_evaluation: str | None = Field(default=None, max_length=80)
+    calories_active_kcal: float | None = Field(default=None, ge=0, le=50000, allow_inf_nan=False)
+    calories_resting_kcal: float | None = Field(default=None, ge=0, le=50000, allow_inf_nan=False)
+    calories_intake_kcal: float | None = Field(default=None, ge=0, le=50000, allow_inf_nan=False)
+    sweat_loss_ml: float | None = Field(default=None, ge=0, le=20000, allow_inf_nan=False)
+    fluid_intake_ml: float | None = Field(default=None, ge=0, le=20000, allow_inf_nan=False)
+    body_battery_delta: int | None = Field(default=None, ge=-100, le=100)
+    grade_adjusted_pace_sec_km: float | None = Field(default=None, ge=75, le=1800, allow_inf_nan=False)
+    running_seconds: float | None = Field(default=None, ge=0, le=172800, allow_inf_nan=False)
+    walking_seconds: float | None = Field(default=None, ge=0, le=172800, allow_inf_nan=False)
+    idle_seconds: float | None = Field(default=None, ge=0, le=172800, allow_inf_nan=False)
+    intensity_moderate_min: float | None = Field(default=None, ge=0, le=2880, allow_inf_nan=False)
+    intensity_vigorous_min: float | None = Field(default=None, ge=0, le=2880, allow_inf_nan=False)
+
+
+class WorkoutNotes(Input):
+    training_type: Literal['unspecified', 'easy', 'interval', 'tempo', 'steady', 'lsd', 'race'] = 'unspecified'
+    rpe: int | None = Field(default=None, ge=1, le=10)
+    note: str = Field(default='', max_length=2000)
+    garmin: GarminExtras = Field(default_factory=GarminExtras)
+
+
+class WorkoutSpec(Input):
+    type: Literal['rest', 'easy', 'interval', 'tempo', 'steady', 'lsd']
+    mode: Literal['pace', 'hr', 'rpe'] | None = None
+    distance_km: float | None = Field(default=None, gt=0, le=100, allow_inf_nan=False)
+    duration_min: float | None = Field(default=None, gt=0, le=600, allow_inf_nan=False)
+    repetitions: int = Field(default=4, ge=1, le=20)
+    repeat_distance_m: int = Field(default=400, ge=100, le=5000)
+    recovery_distance_m: int = Field(default=200, ge=0, le=5000)
+    warmup_km: float = Field(default=1, ge=0, le=10, allow_inf_nan=False)
+    cooldown_km: float = Field(default=1, ge=0, le=10, allow_inf_nan=False)
+    pace_low_sec_km: float | None = Field(default=None, ge=75, le=1800, allow_inf_nan=False)
+    pace_high_sec_km: float | None = Field(default=None, ge=75, le=1800, allow_inf_nan=False)
+    hr_low: int | None = Field(default=None, ge=30, le=240)
+    hr_high: int | None = Field(default=None, ge=30, le=240)
+
+    @model_validator(mode='after')
+    def one_volume(self):
+        if self.distance_km is not None and self.duration_min is not None:
+            raise ValueError('거리와 시간 중 하나를 선택하세요.')
+        return self
 
 
 @app.get("/health")
@@ -259,6 +334,22 @@ def update_profile(body: ProfileInput, user_id=Depends(auth.current_user), db: S
 def crews(user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope="function")):
     rows = db.execute(select(Crew, Member).join(Member, Member.crew_id == Crew.id).where(Member.user_id == user_id)).all()
     return [{**dump(c), "membership": dump(m)} for c, m in rows]
+
+
+@app.patch('/profile/athlete-settings')
+def update_athlete(body: AthleteSettings, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    obj = db.get(Profile, user_id)
+    obj.athlete_settings = body.model_dump(mode='json')
+    return dump(obj)
+
+
+def own_analyses(db, user_id):
+    return [r.analysis for r in db.scalars(select(Run).where(Run.user_id == user_id, Run.status == 'completed').order_by(Run.created_at.desc()).limit(2000)) if r.analysis]
+
+
+@app.get('/training/catalog')
+def training_catalog(user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    return catalog(dump(db.get(Profile, user_id)), own_analyses(db, user_id))
 
 
 @app.post("/crews", status_code=201)
@@ -408,7 +499,7 @@ def upload(file: UploadFile, user_id=Depends(auth.current_user), db: Session = D
     if len(data) > settings().max_upload_bytes:
         raise HTTPException(413, "GPX 파일은 10 MiB 이하여야 합니다.")
     try:
-        parse_gpx(data)
+        data, extension = prepare_upload(data, file.filename)
     except GPXError as exc:
         raise HTTPException(422, str(exc)) from exc
     sha = hashlib.sha256(data).hexdigest()
@@ -416,7 +507,7 @@ def upload(file: UploadFile, user_id=Depends(auth.current_user), db: Session = D
     if existing:
         return public_run(existing)
     run_id = uid()
-    key = f"{user_id}/{run_id}.gpx"
+    key = f"{user_id}/{run_id}.{extension}"
     try:
         storage.put(key, data)
         run = Run(id=run_id, user_id=user_id, file_key=key, sha256=sha)
@@ -448,8 +539,9 @@ def run_detail(run_id: str, user_id=Depends(auth.current_user), db: Session = De
 @app.get("/runs/{run_id}/file")
 def raw_file(run_id: str, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope="function")):
     run = mine(db, Run, run_id, user_id)
-    return Response(storage.get(run.file_key), media_type="application/gpx+xml",
-                    headers={"Content-Disposition": f'attachment; filename="{run.id}.gpx"'})
+    extension = run.file_key.rsplit(".", 1)[-1]
+    return Response(storage.get(run.file_key), media_type="application/octet-stream" if extension == "fit" else "application/gpx+xml",
+                    headers={"Content-Disposition": f'attachment; filename="{run.id}.{extension}"'})
 
 
 @app.delete("/runs/{run_id}")
@@ -458,6 +550,41 @@ def delete_run(run_id: str, user_id=Depends(auth.current_user), db: Session = De
     storage.delete(run.file_key)
     db.delete(run)
     return {"message": "원본과 분석 기록을 삭제했습니다."}
+
+
+@app.get('/runs/{run_id}/feedback')
+def run_feedback(run_id: str, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    run = mine(db, Run, run_id, user_id)
+    if run.status != 'completed' or not run.analysis:
+        raise HTTPException(409, '분석 완료 후 코칭을 확인하세요.')
+    return feedback(run.analysis, run.workout_notes or {}, dump(db.get(Profile, user_id)), own_analyses(db, user_id))
+
+
+@app.patch('/runs/{run_id}/notes')
+def run_notes(run_id: str, body: WorkoutNotes, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    run = mine(db, Run, run_id, user_id)
+    run.workout_notes = body.model_dump()
+    return public_run(run)
+
+
+@app.get('/runs/{run_id}/route')
+def run_route(run_id: str, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    run = mine(db, Run, run_id, user_id)
+    return private_route(storage.get(run.file_key), run.file_key.rsplit('.', 1)[-1])
+
+
+@app.post('/runs/{run_id}/reanalyze', status_code=202)
+def reanalyze(run_id: str, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    run = mine(db, Run, run_id, user_id)
+    if run.status not in {'completed', 'failed'}:
+        raise HTTPException(409, '이미 처리 중인 기록입니다.')
+    if settings().mode == 'production':
+        if not rpc(db, 'request_reanalysis', p_run=run.id):
+            raise HTTPException(409, '이미 처리 중인 기록입니다.')
+        db.refresh(run)
+    else:
+        run.status, run.attempts, run.analysis, run.error, run.lease_until = 'queued', 0, None, None, None
+    return public_run(run)
 
 
 @app.get("/dashboard")
@@ -495,6 +622,24 @@ def generate_plan(user_id=Depends(auth.current_user), db: Session = Depends(db_f
         plan = Plan(user_id=user_id, week_start=prescription["week_start"], prescription=prescription)
         db.add(plan)
         db.flush()
+    return plan_output(db, plan, user_id)
+
+
+@app.patch('/plans/{plan_id}/days/{day_index}')
+def edit_day(plan_id: str, day_index: int, body: WorkoutSpec, user_id=Depends(auth.current_user), db: Session = Depends(db_for_user, scope='function')):
+    plan = mine(db, Plan, plan_id, user_id)
+    if not 0 <= day_index <= 6:
+        raise HTTPException(422, '요일은 0~6이어야 합니다.')
+    if db.get(Completion, (plan.id, day_index)):
+        raise HTTPException(409, '완료 기록을 취소한 뒤 훈련을 편집하세요.')
+    prescription = deepcopy(plan.prescription)
+    ref = catalog(dump(db.get(Profile, user_id)), own_analyses(db, user_id))['reference']
+    try:
+        prescription['days'][day_index] = build_day(prescription['days'][day_index], body.model_dump(), ref)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    prescription['editing_warnings'] = plan_warnings(prescription['days'], prescription.get('basis', {}).get('weekly_target_km'))
+    plan.prescription = prescription
     return plan_output(db, plan, user_id)
 
 
@@ -537,7 +682,8 @@ def export_account(user_id=Depends(auth.current_user), db: Session = Depends(db_
         with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("account.json", json.dumps(data, ensure_ascii=False, indent=2))
             for run in rows:
-                archive.writestr(f"gpx/{run.id}.gpx", storage.get(run.file_key))
+                extension = run.file_key.rsplit(".", 1)[-1]
+                archive.writestr(f"{extension}/{run.id}.{extension}", storage.get(run.file_key))
         stream.seek(0)
     except Exception:
         stream.close()

@@ -46,3 +46,7 @@ Root Directory `apps/web`, 프레임워크 Next.js, repository root 설치/빌�
 서로 다른 A/B/C 계정과 owner/admin/member 역할로 가입·이메일 확인, invite→pending→승인, 원본 업로드→completed, 세 명 동의→집계→한 명 철회 즉시 제한, 다른 사용자의 run UUID로 조회/다운로드/삭제 모두 404, 직접 Supabase REST로 역할·analysis 변경 차단, GPX 삭제/ZIP 내용/계정 삭제를 확인합니다. refreshed 세션이 재인증 제한을 우회하지 않는지도 확인합니다.
 
 PGlite 테스트는 DB 정책을 검증하지만 Supabase 플랫폼 Auth/Storage·외부 hosting network까지 대신 검증하지 않습니다. 성공한 deployment URL, 커밋, migration, 실제 검증 시간을 운영 기록에 남긴 뒤 실제 베타 데이터를 수집합니다.
+
+## 상세 지표 버전 업그레이드
+
+신규 프로젝트는 migrations의 initial과 garmin_coaching 두 파일을 순서대로 적용합니다. 기존 프로젝트는 `202610130002_garmin_coaching.sql`만 **코드 배포 전에** 적용하세요. [GARMIN-COACHING.md](GARMIN-COACHING.md)에 데이터 출처·업그레이드·검증 절차가 있습니다.

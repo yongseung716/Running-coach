@@ -37,6 +37,9 @@ for pattern, name, packages in [
     ('test_analysis.py','GPX analysis',('lxml',)),
     ('test_coaching.py','Rule coaching',()),
     ('test_security.py','JWT/password/storage security',('jwt','fastapi','pydantic_settings')),
+    ('test_activity.py','FIT/GPX import',('fitdecode','lxml')),
+    ('test_training.py','Training ranges and coaching',()),
+    ('test_advanced_api.py','Private coaching and plan editing API',('fitdecode','sqlalchemy','fastapi')),
     ('test_api.py','API lifecycle',('sqlalchemy','email_validator','fastapi','jwt','pydantic_settings')),
 ]:
     check(name,[sys.executable,'-m','unittest','discover','-s','apps/api/tests','-p',pattern,'-v'],missing_python(*packages))
