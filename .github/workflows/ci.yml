@@ -39,6 +39,8 @@ jobs:
           MODE: test
           PYTHONPATH: apps/api
       - run: npm ci
+      - name: Single-service beta process lifecycle
+        run: python scripts/test-supervisor.py
       - run: npm run typecheck
       - run: npm run test:rls
       - run: npm run build

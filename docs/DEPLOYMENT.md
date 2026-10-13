@@ -15,6 +15,8 @@ Supabase 프로젝트·DB 비밀번호·anon key·service_role key, 이메일 SM
 
 ## 2. Python API와 worker
 
+비용을 줄이는 무료 베타는 [RENDER-FREE-BETA.md](RENDER-FREE-BETA.md)의 Free Web Service 하나에서 `python -m coach.serve`를 실행할 수 있습니다. API와 워커는 다른 프로세스지만 서비스 절전 중에는 모두 멈추며, 다음 기동 때 DB의 작업을 재개합니다. 아래 분리 구성은 상시 처리가 필요한 경우에 사용합니다.
+
 같은 Docker image를 API와 worker 두 서비스로 실행합니다. 저장소 루트 Dockerfile 경로는 `apps/api/Dockerfile`. API command 기본 uvicorn, worker command `python -m coach.worker`. 항상 켜진 worker가 필요하며 Vercel serverless에서 실행하지 않습니다.
 
 ```text

@@ -41,6 +41,9 @@ for pattern, name, packages in [
 ]:
     check(name,[sys.executable,'-m','unittest','discover','-s','apps/api/tests','-p',pattern,'-v'],missing_python(*packages))
 check('Python source syntax',[sys.executable,'-m','compileall','-q','apps/api','scripts'])
+check('Single-service beta process lifecycle',[sys.executable,'scripts/test-supervisor.py'],
+      missing_python('sqlalchemy','fastapi','pydantic_settings')+
+      ([] if Path('/proc/self/status').exists() else ['Linux /proc']))
 check('Service worker syntax',['node','--check','apps/web/public/sw.js'],[] if shutil.which('node') else ['node'])
 check('PostgreSQL/RLS',['npm','run','test:rls'],missing_node('@electric-sql/pglite'))
 check('TypeScript',['npm','run','typecheck'],missing_node('typescript','next','react'))

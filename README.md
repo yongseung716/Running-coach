@@ -48,6 +48,8 @@ npm run test:web
 
 ## 배포
 
+초기 무료 베타는 [Render 무료 서버 설정](docs/RENDER-FREE-BETA.md)을 따릅니다. API와 워커를 한 무료 서비스에서 실행하며, 유휴 절전과 재접속 지연이 있습니다. 운영 데이터는 Supabase에 저장합니다.
+
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)의 Supabase migration → API/worker → Vercel 순서를 따릅니다. 외부 LLM 키는 필요하지 않습니다. 운영 모드는 개발 인증·SQLite를 거부합니다. GPS Storage bucket은 비공개, 크루 운영자도 개인 runs RLS를 우회할 수 없습니다.
 
 ## 문서

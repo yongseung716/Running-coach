@@ -3,7 +3,11 @@ node_modules
 .venv
 .python-deps
 **/data
-**/.env
-**/.env.local
+**/.env*
+**/.auth-secret
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
 **/__pycache__
 **/.next
