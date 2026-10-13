@@ -2,6 +2,8 @@
 
 ## 무료 베타 실행 구성 추가 검증 (2026-10-13)
 
+추가 구성의 원격 CI도 성공했습니다: [GitHub Actions 38347722161](https://github.com/yongseung716/Running-coach/actions/runs/38347722161). 검증한 코드 commit은 `f14bddf473b5c918236dfc1f563408970762cfbb`이며 기존 29개 회귀 job과 전체 verify job 모두 성공했습니다. 전체 job에서 Python 39개, 실제 프로세스 smoke test, TypeScript, PostgreSQL RLS, Next 빌드와 브라우저 테스트를 재실행했습니다. 결과 기록 후속 commit은 문서만 변경합니다.
+
 `python -m coach.serve`로 API와 분석 워커를 한 호스트의 별도 프로세스로 실행하는 선택지를 추가했습니다. 로컬에서도 같은 런처를 사용합니다. 기존 Python 39개(기존 회귀 29개 포함)와 실제 업로드/분석을 포함한 모바일·데스크톱 브라우저 4개를 재실행하여 모두 통과했습니다. Linux의 실제 프로세스 smoke test는 호스트가 지정한 PORT, 두 프로세스 기동, SIGTERM 종료 후 자식 프로세스 정리, 워커 강제 종료 시 API도 중단하고 실패 종료하는 동작을 모두 통과했습니다. 이 smoke test는 GitHub Actions에도 추가했습니다.
 
 Render Free는 절전 중 분석이 멈추는 베타용 구성입니다. Supabase DB/비공개 Storage에 데이터를 저장하며 다음 기동 때 작업을 재개합니다. Render에 실제 배포하거나 절전/재접속을 실서비스로 검증한 상태는 아닙니다. 설정과 제한은 [RENDER-FREE-BETA.md](RENDER-FREE-BETA.md)를 참조하세요. 아래 원격 CI 기록은 이전 검증 코드의 이력을 보존합니다.
