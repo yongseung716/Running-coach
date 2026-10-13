@@ -62,3 +62,7 @@ npm run test:web
 - [검증 결과](docs/VERIFICATION.md)
 
 베타 이후 큰 규모에서는 GPX 작업 큐/내보내기를 별도 작업 서비스로 확장하고, edge rate limits·관측·백업 체계를 강화합니다. 의료 진단/부상 치료 서비스를 제공하지 않습니다.
+
+## 상세 기록과 훈련 편집
+
+FIT/GPX 상세 지표, 근거를 포함한 코치 피드백, 실제 5K/10K 기록 기반 페이스/심박 범위, 거리 인터벌·템포런·지속주·LSD 편집은 [상세 기능·업그레이드 지침](docs/GARMIN-COACHING.md)을 참고하세요. 기존 Supabase 프로젝트에는 추가 migration을 먼저 적용해야 합니다.

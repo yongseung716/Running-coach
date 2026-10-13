@@ -29,7 +29,15 @@ class AnalysisTests(unittest.TestCase):
         self.assertTrue(result['splits'][-1]['partial'])
         self.assertAlmostEqual(sum(s['distance_km'] for s in result['splits']), result['distance_km'], delta=.001)
         self.assertEqual(result['ascent_m'], 18)
-        self.assertNotIn('lat', str(result))
+        def assert_private(value):
+            if isinstance(value, dict):
+                self.assertTrue({'lat', 'lon', 'latitude', 'longitude', 'position_lat', 'position_long'}.isdisjoint(value))
+                for child in value.values():
+                    assert_private(child)
+            elif isinstance(value, list):
+                for child in value:
+                    assert_private(child)
+        assert_private(result)
 
     def test_no_time_does_not_invent_pace(self):
         result = analyze(gpx([(0, 0, ''), (0, .001, '')]))

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, UniqueConstraint, Uuid, create_engine, event, text
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, UniqueConstraint, Uuid, create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 from .config import settings
@@ -33,6 +33,7 @@ class Profile(Base):
     goal_distance_km: Mapped[float | None] = mapped_column(Float, nullable=True)
     goal_time_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     runs_per_week: Mapped[int] = mapped_column(Integer, default=3)
+    athlete_settings: Mapped[dict] = mapped_column(JSON, default=dict, server_default=text("'{}'"))
 
 
 class Crew(Base):
@@ -70,6 +71,7 @@ class Run(Base):
     status: Mapped[str] = mapped_column(String, default="queued")
     error: Mapped[str | None] = mapped_column(String, nullable=True)
     analysis: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    workout_notes: Mapped[dict] = mapped_column(JSON, default=dict, server_default=text("'{}'"))
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     lease_until: Mapped[float | None] = mapped_column(Float, nullable=True)
 
@@ -115,6 +117,11 @@ def engine():
 def initialize():
     if settings().mode != "production":
         Base.metadata.create_all(engine())
+        # Preserve existing local accounts/GPX when upgrading a development DB.
+        with engine().begin() as connection:
+            for table, column in [('profiles', 'athlete_settings'), ('runs', 'workout_notes')]:
+                if column not in {c['name'] for c in inspect(connection).get_columns(table)}:
+                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} JSON NOT NULL DEFAULT '{{}}'"))
 
 
 def session(user_id=None):

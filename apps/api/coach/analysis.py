@@ -1,11 +1,11 @@
 """Pure, versioned deterministic engine. Does not produce medical advice or GPS output."""
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 from lxml import etree as ET
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 MAX_POINTS = 100_000
 
 
@@ -15,11 +15,13 @@ class GPXError(ValueError):
 
 @dataclass
 class Point:
-    lat: float
-    lon: float
+    lat: float | None
+    lon: float | None
     time: datetime | None
     ele: float | None
     hr: float | None
+    metrics: dict = field(default_factory=dict)
+    distance_m: float | None = None
 
 
 def number(value):
@@ -79,7 +81,8 @@ def parse_gpx(data: bytes):
             if elevation is not None and not -500 <= elevation <= 10000:
                 elevation = None
                 warnings.add("범위 밖 고도 측정치를 제외했습니다.")
-            points.append(Point(lat, lon, stamp, elevation, hr))
+            from .activity_metrics import gpx_metrics
+            points.append(Point(lat, lon, stamp, elevation, hr, gpx_metrics(values, warnings)))
         if points:
             segments.append(points)
     if sum(len(s) for s in segments) < 2 or not any(len(s) > 1 for s in segments):
@@ -95,9 +98,14 @@ def haversine(a, b):
 
 def analyze(data: bytes):
     segments, warnings = parse_gpx(data)
+    return analyze_points(segments, warnings)
+
+
+def analyze_points(segments, warnings):
     distance = moving = ascent = descent = hr_sum = hr_seconds = tracked_seconds = 0.0
     timing_complete = all(p.time is not None for s in segments for p in s)
     edges, series = [], []
+    hr_histogram = {}
     all_times = [p.time for s in segments for p in s if p.time]
     prev_segment_end = None
     for segment in segments:
@@ -110,7 +118,16 @@ def analyze(data: bytes):
             warnings.add("트랙 구간의 시간이 역순입니다.")
         prev_segment_end = segment[-1].time
         for a, b in zip(segment, segment[1:]):
-            meters = haversine(a, b)
+            if a.distance_m is not None and b.distance_m is not None:
+                meters = b.distance_m - a.distance_m
+                if meters < 0:
+                    warnings.add("기기 누적 거리가 역순인 연결을 제외했습니다.")
+                    continue
+            elif a.lat is not None and b.lat is not None:
+                meters = haversine(a, b)
+            else:
+                warnings.add("GPS와 기기 거리 모두 없는 구간은 거리 계산에서 제외했습니다.")
+                continue
             dt = (b.time - a.time).total_seconds() if a.time and b.time else None
             if dt is None or dt <= 0:
                 timing_complete = False
@@ -124,6 +141,9 @@ def analyze(data: bytes):
                 if a.hr is not None and b.hr is not None:
                     hr_sum += (a.hr + b.hr) / 2 * dt
                     hr_seconds += dt
+                    for hr in (a.hr, b.hr):
+                        key = str(int(round(hr)))
+                        hr_histogram[key] = hr_histogram.get(key, 0) + dt / 2
             move_dt = dt if dt and dt > 0 and meters / dt >= 0.5 else 0.0
             distance += meters
             moving += move_dt
@@ -137,7 +157,11 @@ def analyze(data: bytes):
             else:
                 elevation_anchor = b.ele
             series.append({"distance_km": round(distance / 1000, 3), "elevation_m": b.ele,
-                           "heart_rate_bpm": b.hr})
+                           "heart_rate_bpm": b.hr, **b.metrics,
+                           "elapsed_seconds": round((b.time - all_times[0]).total_seconds(), 1) if b.time and all_times else None,
+                           "sample_seconds": dt if dt and dt > 0 else None,
+                           "speed_kmh": round(meters / dt * 3.6, 3) if dt and dt > 0 else None,
+                           "pace_sec_km": round(dt / meters * 1000, 1) if move_dt and meters else None})
     if distance == 0:
         warnings.add("유효한 이동 거리가 없습니다.")
     all_points = [p for s in segments for p in s]
@@ -164,6 +188,8 @@ def analyze(data: bytes):
         splits.append({"index": len(splits) + 1, "distance_km": round(split_dist / 1000, 3), "partial": True,
                        "pace_sec_km": round(split_seconds / (split_dist / 1000), 1) if timing_complete and split_seconds else None})
     stride = max(1, math.ceil(len(series) / 500))
+    from .activity_metrics import summarize
+    extra = summarize(series, all_points, timing_complete)
     return {"engine_version": VERSION, "started_at": all_times[0].isoformat() if all_times else None,
             "distance_km": round(distance / 1000, 3),
             "elapsed_seconds": round((max(all_times) - min(all_times)).total_seconds(), 1) if timing_complete and all_times else None,
@@ -174,4 +200,4 @@ def analyze(data: bytes):
             "ascent_m": round(ascent, 1) if any(p.ele is not None for p in all_points) else None,
             "descent_m": round(descent, 1) if any(p.ele is not None for p in all_points) else None,
             "point_count": len(all_points), "timing_complete": timing_complete,
-            "splits": splits, "series": [p for i, p in enumerate(series) if i % stride == 0 or p.get("segment_break") or i == len(series)-1], "warnings": sorted(warnings)}
+            **extra, "heart_rate_seconds": hr_histogram, "splits": splits, "series": [p for i, p in enumerate(series) if i % stride == 0 or p.get("segment_break") or i == len(series)-1], "warnings": sorted(warnings)}

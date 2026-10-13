@@ -19,7 +19,7 @@ def remote(method, key, data=None):
     response = httpx.request(method, f"{cfg.supabase_url}/storage/v1/object/{path}",
                              headers={"Authorization": f"Bearer {cfg.supabase_service_role_key}",
                                       "apikey": cfg.supabase_service_role_key,
-                                      "Content-Type": "application/json" if method == "DELETE" else "application/gpx+xml"},
+                                      "Content-Type": "application/json" if method == "DELETE" else "application/octet-stream" if key.endswith('.fit') else "application/gpx+xml"},
                              content=data, json={"prefixes": [key]} if method == "DELETE" else None, timeout=30)
     if method == "DELETE" and response.status_code == 404:
         return response
